@@ -16,7 +16,7 @@ class Config:
     )
     guild_id: int | None = field(
         default_factory=lambda: int(os.environ["GUILD_ID"])
-        if os.environ.get("GUILD_ID")
+        if os.environ.get("GUILD_ID", "").strip().isdigit()
         else None
     )
 
