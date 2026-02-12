@@ -1,0 +1,29 @@
+[project]
+name = "ifudodo-mix"
+version = "0.1.0"
+description = "Discord bot that generates Ifuudoudou music mixes using MusicGen"
+requires-python = ">=3.10,<3.12"
+
+[tool.pixi.workspace]
+channels = ["conda-forge", "pytorch"]
+platforms = ["linux-64"]
+
+[tool.pixi.dependencies]
+python = "3.10.*"
+ffmpeg = ">=6,<7"
+pkg-config = "*"
+numpy = "<2.0.0"
+
+[tool.pixi.pypi-dependencies]
+discord-py = ">=2.3"
+audiocraft = { git = "https://github.com/facebookresearch/audiocraft.git" }
+torch = ">=2.1.0"
+torchaudio = ">=2.1.0"
+python-dotenv = ">=1.0.0"
+ifudodo-mix = { path = ".", editable = true }
+
+[tool.pixi.pypi-options]
+no-binary = ["av"]
+
+[tool.pixi.tasks]
+start = "python -m ifudodo_mix"
