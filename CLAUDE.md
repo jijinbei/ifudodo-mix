@@ -27,9 +27,23 @@ bot.py                Discord client, /ifudodo slash command handler
   └─ audio_utils.py        MP3 conversion (ffmpeg), file size check, temp file cleanup
 ```
 
-**Generation flow:** User sends `/ifudodo <style>` → prompt built from fixed context + user input → `ACEStepGenerator.generate()` acquires async lock → runs `_generate_sync()` in ThreadPoolExecutor → `AceStepHandler.generate_music(captions, lyrics, vocal_language="ja", ...)` → WAV saved via soundfile → converted to MP3 via ffmpeg → uploaded to Discord → temp files cleaned up.
+**Generation flow:** User sends `/ifudodo <style>` → prompt built from fixed context + user input → `ACEStepGenerator.generate()` acquires async lock → runs `_generate_sync()` in ThreadPoolExecutor → `AceStepHandler.generate_music(captions, lyrics, vocal_language="ja", task_type="repaint", ...)` with reference audio as both `reference_audio` and `src_audio` → WAV saved via soundfile → converted to MP3 via ffmpeg → uploaded to Discord → temp files cleaned up.
 
-**ACE-Step 1.5** is cloned to `vendor/ace-step-15/` and loaded via `PYTHONPATH`. The handler's `process_reference_audio` is monkey-patched to use `soundfile` instead of `torchaudio` to avoid `torchcodec`/`libnppicc` dependency issues.
+**ACE-Step 1.5** is cloned to `vendor/ace-step-15/` and loaded via `PYTHONPATH`. The handler's `process_reference_audio` and `process_src_audio` are monkey-patched to use `soundfile` instead of `torchaudio` to avoid `torchcodec`/`libnppicc` dependency issues.
+
+## ACE-Step Generation Parameters
+
+Current generation uses **repaint mode** (`task_type="repaint"`) with the original song as source audio. Key parameters for tuning remix behavior:
+
+- **`audio_cover_strength`** (0.0–1.0, default 1.0): Fraction of diffusion steps that reference the source audio. Lower = more creative freedom.
+- **`cover_noise_strength`** (0.0–1.0, default 0.0): How close the initial noise is to the source latents. Higher = closer to original. **Caution:** Setting >0 with full-duration repaint (`repainting_start=0, repainting_end=duration`) causes silent output because all source latents are replaced by silence latents before blending.
+- **`guidance_scale`** (1.0–15.0, default 7.0): Text prompt adherence (turbo model ignores this).
+- **`inference_steps`** (default 60): More steps = higher quality but slower.
+
+### Known Issues
+
+- Full-duration repaint + `cover_noise_strength > 0` = silent output. To use `cover_noise_strength`, switch from repaint to cover mode (remove `task_type`/`repainting_*`, add `audio_cover_strength`).
+- The prompt context (`IFUDODO_CONTEXT`) includes "march, 120 BPM, majestic and dignified" which can conflict with distant genres (e.g., hardcore). Consider splitting base structure from style defaults to let user input override.
 
 ## Key Conventions
 

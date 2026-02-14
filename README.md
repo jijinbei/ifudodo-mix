@@ -1,6 +1,6 @@
 # ifudodo-mix
 
-威風堂々の音楽ミックスを生成する Discord bot。Meta の [MusicGen](https://github.com/facebookresearch/audiocraft) をローカルで動かし、ユーザーが指定したスタイルでリミックスを生成します。
+威風堂々の音楽ミックスを生成する Discord bot。[ACE-Step 1.5](https://github.com/ACE-Step/ACE-Step-1.5) を使い、ユーザーが指定したスタイルで威風堂々をリミックスした音声（日本語歌詞付き）を生成します。
 
 ## 必要環境
 
@@ -46,6 +46,8 @@ GUILD_ID=123456789              # 省略可: 開発時はサーバーIDを指定
 pixi run start
 ```
 
+初回起動時に ACE-Step 1.5 リポジトリが `vendor/ace-step-15/` にクローンされます。
+
 ## 使い方
 
 Discord で `/ifudodo` コマンドを使います:
@@ -58,7 +60,7 @@ Discord で `/ifudodo` コマンドを使います:
 /ifudodo orchestral epic
 ```
 
-スタイルを記述すると、威風堂々のメロディをベースにそのスタイルでリミックスした音声ファイルが返されます。
+スタイルを記述すると、威風堂々の原曲をベースに repaint モードでリミックスした音声ファイル（MP3）が返されます。
 
 ## 設定項目
 
@@ -67,16 +69,15 @@ Discord で `/ifudodo` コマンドを使います:
 | 変数 | デフォルト | 説明 |
 |------|-----------|------|
 | `DISCORD_TOKEN` | (必須) | Discord Bot トークン |
-| `GUILD_ID` | (なし) | 開発用サーバーID |
-| `MUSICGEN_MODEL` | `facebook/musicgen-melody` | MusicGen モデル名 |
-| `DEVICE` | `cuda` | 推論デバイス (`cuda` / `cpu`) |
-| `DURATION` | `15` | 生成する音声の長さ (秒) |
-| `REFERENCE_MELODY_PATH` | `assets/ifudodo_source.mp4` | リファレンス楽曲のパス |
-| `OUTPUT_FORMAT` | `wav` | 出力フォーマット |
+| `GUILD_ID` | (なし) | 開発用サーバーID（設定するとコマンド反映が即座） |
+| `REFERENCE_MELODY_PATH` | `assets/ifudodo_source.wav` | リファレンス楽曲のパス |
+| `ACESTEP_AUDIO_DURATION` | `180` | 生成する音声の長さ (秒) |
+| `ACESTEP_INFER_STEP` | `60` | 推論ステップ数（多いほど高品質・低速） |
+| `MAX_FILE_SIZE_MB` | `24` | Discord アップロード上限 (MB) |
 
 ## 仕組み
 
 1. `/ifudodo <スタイル>` コマンドを受信
 2. 威風堂々の音楽特徴 + ユーザー指定スタイルでプロンプトを構築
-3. MusicGen の **メロディコンディショニング** でリファレンス楽曲のメロディを保ちつつ、指定スタイルで音声を生成
-4. 生成された音声ファイルを Discord に送信
+3. ACE-Step 1.5 の **repaint モード** で原曲音声をソースに、指定スタイルで再生成
+4. WAV → MP3 に変換して Discord に送信
