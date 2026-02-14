@@ -20,47 +20,15 @@ class Config:
         else None
     )
 
-    # Backend selection
-    generator_backend: str = field(
-        default_factory=lambda: os.environ.get("GENERATOR_BACKEND", "acestep")
-    )
-
-    # MusicGen
-    model_name: str = field(
-        default_factory=lambda: os.environ.get(
-            "MUSICGEN_MODEL", "facebook/musicgen-small"
-        )
-    )
-    device: str = field(
-        default_factory=lambda: os.environ.get("DEVICE", "cuda")
-    )
-    duration: float = field(
-        default_factory=lambda: float(os.environ.get("DURATION", "15"))
-    )
-    top_k: int = field(
-        default_factory=lambda: int(os.environ.get("TOP_K", "250"))
-    )
-    temperature: float = field(
-        default_factory=lambda: float(os.environ.get("TEMPERATURE", "1.0"))
-    )
-    cfg_coef: float = field(
-        default_factory=lambda: float(os.environ.get("CFG_COEF", "3.0"))
-    )
-
     # Reference melody
     reference_melody_path: str = field(
         default_factory=lambda: os.environ.get(
             "REFERENCE_MELODY_PATH",
-            str(ROOT_DIR / "assets" / "ifudodo_source.mp4"),
+            str(ROOT_DIR / "assets" / "ifudodo_source.wav"),
         )
     )
 
     # ACE-Step
-    acestep_model: str = field(
-        default_factory=lambda: os.environ.get(
-            "ACESTEP_MODEL", "acestep-v15-sft"
-        )
-    )
     acestep_audio_duration: float = field(
         default_factory=lambda: float(
             os.environ.get("ACESTEP_AUDIO_DURATION", "180")
@@ -71,16 +39,8 @@ class Config:
             os.environ.get("ACESTEP_INFER_STEP", "60")
         )
     )
-    acestep_ref_audio_strength: float = field(
-        default_factory=lambda: float(
-            os.environ.get("ACESTEP_REF_AUDIO_STRENGTH", "0.4")
-        )
-    )
 
     # Output
-    output_format: str = field(
-        default_factory=lambda: os.environ.get("OUTPUT_FORMAT", "wav")
-    )
     max_file_size_mb: float = field(
         default_factory=lambda: float(os.environ.get("MAX_FILE_SIZE_MB", "24"))
     )

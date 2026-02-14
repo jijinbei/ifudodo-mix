@@ -3,10 +3,9 @@ import logging
 import discord
 from discord import app_commands
 
+from .acestep_generator import ACEStepGenerator, GenerationError
 from .audio_utils import check_file_size, cleanup_temp_file, convert_to_mp3
-from .base_generator import GenerationError
 from .config import Config
-from .generator_factory import create_generator
 from .prompt_builder import build_prompt
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,7 @@ class IfudodoBot(discord.Client):
         super().__init__(intents=intents)
         self.config = config
         self.tree = app_commands.CommandTree(self)
-        self.generator = create_generator(config)
+        self.generator = ACEStepGenerator(config)
 
     async def setup_hook(self) -> None:
         await self.generator.setup()
@@ -58,7 +57,6 @@ class IfudodoBot(discord.Client):
 
                 audio_path = await self.generator.generate(prompt)
 
-                # 常にMP3に変換（WAVはDiscordには大きすぎる）
                 if audio_path.suffix != ".mp3":
                     audio_path = convert_to_mp3(audio_path)
 

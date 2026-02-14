@@ -3,13 +3,14 @@ import logging
 import math
 import random
 import tempfile
+import types
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
+import soundfile as sf
 import torch
 
-from .base_generator import BaseGenerator, GenerationError
 from .config import Config
 from .prompt_builder import IFUDODO_LYRICS
 
@@ -18,13 +19,8 @@ logger = logging.getLogger(__name__)
 MAX_QUEUE_DEPTH = 3
 
 
-def _is_v15() -> bool:
-    """Check if ACE-Step v1.5 is available (handler module exists)."""
-    try:
-        from acestep.handler import AceStepHandler  # noqa: F401
-        return True
-    except ImportError:
-        return False
+class GenerationError(Exception):
+    pass
 
 
 def _process_reference_audio_sf(self, audio_file: Optional[str]) -> Optional[torch.Tensor]:
@@ -33,8 +29,6 @@ def _process_reference_audio_sf(self, audio_file: Optional[str]) -> Optional[tor
     if audio_file is None:
         return None
     try:
-        import soundfile as sf
-
         audio_np, sr = sf.read(audio_file, dtype="float32")
         if audio_np.ndim == 1:
             audio = torch.from_numpy(audio_np).unsqueeze(0)
@@ -72,18 +66,18 @@ def _process_reference_audio_sf(self, audio_file: Optional[str]) -> Optional[tor
         return None
 
 
-class ACEStepGenerator(BaseGenerator):
+class ACEStepGenerator:
     def __init__(self, config: Config):
         self.config = config
-        self._pipeline = None  # v1.0
-        self._handler = None   # v1.5
-        self._v15 = False
+        self._handler = None
         self._ref_audio = None
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._lock = asyncio.Lock()
         self._queue_depth = 0
 
     async def setup(self) -> None:
+        from acestep.handler import AceStepHandler
+
         ref_path = Path(self.config.reference_melody_path)
         if ref_path.exists():
             self._ref_audio = str(ref_path)
@@ -92,39 +86,25 @@ class ACEStepGenerator(BaseGenerator):
             self._ref_audio = None
             logger.warning("No reference audio at %s", ref_path)
 
-        if _is_v15():
-            self._v15 = True
-            from acestep.handler import AceStepHandler
+        logger.info("Initializing ACE-Step v1.5 handler")
+        self._handler = AceStepHandler()
+        # Patch process_reference_audio to use soundfile instead of
+        # torchaudio (avoids torchcodec/libnppicc dependency).
+        self._handler.process_reference_audio = types.MethodType(
+            _process_reference_audio_sf, self._handler
+        )
+        status, ok = self._handler.initialize_service(
+            project_root="",
+            config_path="acestep-v15-turbo",
+            device="auto",
+            use_flash_attention=False,
+            offload_to_cpu=True,
+        )
+        logger.info("ACE-Step v1.5: %s (ok=%s)", status, ok)
 
-            logger.info("Initializing ACE-Step v1.5 handler")
-            self._handler = AceStepHandler()
-            # Patch process_reference_audio to use soundfile instead of
-            # torchaudio (avoids torchcodec/libnppicc dependency).
-            import types
-
-            self._handler.process_reference_audio = types.MethodType(
-                _process_reference_audio_sf, self._handler
-            )
-            status, ok = self._handler.initialize_service(
-                project_root="",
-                config_path="acestep-v15-turbo",
-                device="auto",
-                use_flash_attention=False,
-                offload_to_cpu=True,
-            )
-            logger.info("ACE-Step v1.5: %s (ok=%s)", status, ok)
-        else:
-            from acestep.pipeline_ace_step import ACEStepPipeline
-
-            logger.info("Initializing ACE-Step v1.0 pipeline")
-            self._pipeline = ACEStepPipeline(cpu_offload=True)
-            logger.info("ACE-Step v1.0 initialized")
-
-    def _generate_sync_v15(self, prompt: str) -> Path:
-        import soundfile as sf
-
+    def _generate_sync(self, prompt: str) -> Path:
         logger.info(
-            "Generating with ACE-Step v1.5 (duration=%.1fs, steps=%d): %r",
+            "Generating (duration=%.1fs, steps=%d): %r",
             self.config.acestep_audio_duration,
             self.config.acestep_infer_step,
             prompt,
@@ -140,7 +120,7 @@ class ACEStepGenerator(BaseGenerator):
 
         if not result.get("success") or not result.get("audios"):
             error = result.get("error", "Unknown error")
-            raise GenerationError(f"ACE-Step v1.5 generation failed: {error}")
+            raise GenerationError(f"ACE-Step generation failed: {error}")
 
         audio_data = result["audios"][0]
         audio_tensor = audio_data["tensor"]
@@ -148,46 +128,10 @@ class ACEStepGenerator(BaseGenerator):
 
         tmp_dir = tempfile.mkdtemp(prefix="ifudodo_")
         output_path = Path(tmp_dir) / "mix.wav"
-        # Use soundfile instead of torchaudio.save to avoid torchcodec dep
-        audio_np = audio_tensor.cpu().numpy().T  # (channels, samples) -> (samples, channels)
+        audio_np = audio_tensor.cpu().numpy().T
         sf.write(str(output_path), audio_np, sample_rate)
         logger.info("Generated audio saved to: %s", output_path)
         return output_path
-
-    def _generate_sync_v10(self, prompt: str) -> Path:
-        tmp_dir = tempfile.mkdtemp(prefix="ifudodo_")
-
-        logger.info(
-            "Generating with ACE-Step v1.0 (duration=%.1fs, steps=%d): %r",
-            self.config.acestep_audio_duration,
-            self.config.acestep_infer_step,
-            prompt,
-        )
-        results = self._pipeline(
-            prompt=prompt,
-            lyrics=IFUDODO_LYRICS,
-            audio_duration=self.config.acestep_audio_duration,
-            infer_step=self.config.acestep_infer_step,
-            format="wav",
-            save_path=tmp_dir,
-            audio2audio_enable=self._ref_audio is not None,
-            ref_audio_input=self._ref_audio,
-            ref_audio_strength=self.config.acestep_ref_audio_strength,
-        )
-
-        audio_paths = [r for r in results if isinstance(r, str) and r.endswith(".wav")]
-        if not audio_paths:
-            raise GenerationError("ACE-Step did not produce any audio output")
-
-        output_path = Path(audio_paths[0])
-        logger.info("Generated audio saved to: %s", output_path)
-        return output_path
-
-    def _generate_sync(self, prompt: str) -> Path:
-        if self._v15:
-            return self._generate_sync_v15(prompt)
-        else:
-            return self._generate_sync_v10(prompt)
 
     async def generate(self, prompt: str) -> Path:
         if self._queue_depth >= MAX_QUEUE_DEPTH:

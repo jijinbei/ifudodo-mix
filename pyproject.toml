@@ -1,55 +1,26 @@
 [project]
 name = "ifudodo-mix"
-version = "0.1.0"
-description = "Discord bot that generates Ifuudoudou music mixes"
-requires-python = ">=3.10,<3.12"
+version = "0.2.0"
+description = "Discord bot that generates Ifuudoudou music mixes using ACE-Step 1.5"
+requires-python = ">=3.11,<3.12"
 
 [tool.pixi.workspace]
 channels = ["conda-forge", "pytorch"]
 platforms = ["linux-64"]
 
 [tool.pixi.dependencies]
+python = "3.11.*"
 ffmpeg = ">=6,<7"
 pkg-config = "*"
 
-# Shared dependencies (both backends)
+[tool.pixi.pypi-options]
+no-binary = ["av"]
+extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
+
 [tool.pixi.pypi-dependencies]
 discord-py = ">=2.3"
 python-dotenv = ">=1.0.0"
 ifudodo-mix = { path = ".", editable = true }
-
-[tool.pixi.pypi-options]
-no-binary = ["av"]
-
-# MusicGen backend
-[tool.pixi.feature.musicgen.dependencies]
-python = "3.10.*"
-numpy = "<2.0.0"
-
-[tool.pixi.feature.musicgen.pypi-dependencies]
-audiocraft = { git = "https://github.com/facebookresearch/audiocraft.git" }
-torch = ">=2.1.0,<2.4"
-torchaudio = ">=2.1.0,<2.4"
-transformers = ">=4.30.0,<4.46"
-
-# ACE-Step v1.0 backend
-[tool.pixi.feature.acestep.dependencies]
-python = "3.10.*"
-
-[tool.pixi.feature.acestep.pypi-dependencies]
-ace-step = { git = "https://github.com/ace-step/ACE-Step.git" }
-torch = ">=2.4.0"
-torchaudio = ">=2.4.0"
-torchcodec = ">=0.1.0"
-
-# ACE-Step v1.5 backend (cloned to vendor/, PYTHONPATH approach)
-[tool.pixi.feature.acestep15.dependencies]
-python = "3.11.*"
-
-[tool.pixi.feature.acestep15.pypi-options]
-extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
-
-[tool.pixi.feature.acestep15.pypi-dependencies]
 torch = "==2.10.0"
 torchaudio = "==2.10.0"
 torchvision = "==0.25.0"
@@ -72,12 +43,6 @@ modelscope = "*"
 safetensors = "*"
 lightning = ">=2.0.0"
 
-[tool.pixi.environments]
-musicgen = ["musicgen"]
-acestep = ["acestep"]
-acestep15 = ["acestep15"]
-
 [tool.pixi.tasks]
-start = "python -m ifudodo_mix"
-clone-acestep15 = "git clone --depth 1 https://github.com/ACE-Step/ACE-Step-1.5.git vendor/ace-step-15 2>/dev/null || echo 'Already cloned'"
-start-v15 = { cmd = "python -m ifudodo_mix", env = { PYTHONPATH = "vendor/ace-step-15" }, depends-on = ["clone-acestep15"] }
+clone-acestep = "git clone --depth 1 https://github.com/ACE-Step/ACE-Step-1.5.git vendor/ace-step-15 2>/dev/null || echo 'Already cloned'"
+start = { cmd = "python -m ifudodo_mix", env = { PYTHONPATH = "vendor/ace-step-15" }, depends-on = ["clone-acestep"] }
