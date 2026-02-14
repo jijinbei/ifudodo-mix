@@ -31,5 +31,4 @@ def build_prompt(user_description: str) -> str:
         return IFUDODO_CONTEXT
     return (
         f"{cleaned} remix of a {IFUDODO_CONTEXT}, "
-        f"reimagined with {cleaned} instrumentation, rhythm, and production"
     )
