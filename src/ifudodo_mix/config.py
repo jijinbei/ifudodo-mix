@@ -23,7 +23,7 @@ class Config:
     # MusicGen
     model_name: str = field(
         default_factory=lambda: os.environ.get(
-            "MUSICGEN_MODEL", "facebook/musicgen-melody"
+            "MUSICGEN_MODEL", "facebook/musicgen-small"
         )
     )
     device: str = field(
