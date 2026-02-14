@@ -48,7 +48,7 @@ class IfudodoBot(discord.Client):
 
             audio_path = None
             try:
-                await interaction.followup.send(
+                await interaction.edit_original_response(
                     content="スタイルを調査中...",
                 )
                 researched = await research_style(description, self.config)
