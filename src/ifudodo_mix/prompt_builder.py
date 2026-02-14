@@ -25,10 +25,8 @@ IFUDODO_LYRICS = """\
 """
 
 
-def build_prompt(user_description: str) -> str:
-    cleaned = user_description.strip()
-    if not cleaned:
+def build_prompt(user_description: str, researched_style: str | None = None) -> str:
+    style = researched_style or user_description.strip()
+    if not style:
         return IFUDODO_CONTEXT
-    return (
-        f"{cleaned} remix of a {IFUDODO_CONTEXT}, "
-    )
+    return f"{style} remix of a {IFUDODO_CONTEXT}, "

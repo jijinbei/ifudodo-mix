@@ -7,6 +7,7 @@ from .acestep_generator import ACEStepGenerator, GenerationError
 from .audio_utils import check_file_size, cleanup_temp_file, convert_to_mp3
 from .config import Config
 from .prompt_builder import build_prompt
+from .style_researcher import research_style
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +48,23 @@ class IfudodoBot(discord.Client):
 
             audio_path = None
             try:
-                prompt = build_prompt(description)
+                await interaction.followup.send(
+                    content="スタイルを調査中...",
+                )
+                researched = await research_style(description, self.config)
                 logger.info(
-                    "User %s requested mix: %r -> prompt: %r",
+                    "User %s requested mix: %r -> researched: %r",
                     interaction.user,
                     description,
-                    prompt,
+                    researched,
                 )
 
+                prompt = build_prompt(description, researched_style=researched)
+                logger.info("Final prompt: %r", prompt)
+
+                await interaction.edit_original_response(
+                    content="音楽を生成中...",
+                )
                 audio_path = await self.generator.generate(prompt)
 
                 if audio_path.suffix != ".mp3":

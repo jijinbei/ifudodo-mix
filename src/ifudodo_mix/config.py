@@ -40,6 +40,16 @@ class Config:
         )
     )
 
+    # Ollama (style research)
+    ollama_host: str = field(
+        default_factory=lambda: os.environ.get(
+            "OLLAMA_HOST", "http://localhost:11434"
+        )
+    )
+    ollama_model: str = field(
+        default_factory=lambda: os.environ.get("OLLAMA_MODEL", "gemma3")
+    )
+
     # Output
     max_file_size_mb: float = field(
         default_factory=lambda: float(os.environ.get("MAX_FILE_SIZE_MB", "24"))
