@@ -23,9 +23,9 @@ class GenerationError(Exception):
     pass
 
 
-def _process_reference_audio_sf(self, audio_file: Optional[str]) -> Optional[torch.Tensor]:
-    """Replacement for handler.process_reference_audio using soundfile
-    instead of torchaudio (avoids torchcodec/libnppicc dependency)."""
+def _load_audio_sf(audio_file: Optional[str]) -> Optional[tuple]:
+    """Load audio using soundfile (avoids torchcodec/libnppicc dependency).
+    Returns (tensor, sample_rate) or None."""
     if audio_file is None:
         return None
     try:
@@ -34,36 +34,54 @@ def _process_reference_audio_sf(self, audio_file: Optional[str]) -> Optional[tor
             audio = torch.from_numpy(audio_np).unsqueeze(0)
         else:
             audio = torch.from_numpy(audio_np.T)
-
-        audio = self._normalize_audio_to_stereo_48k(audio, sr)
-        if self.is_silence(audio):
-            return None
-
-        target_frames = 30 * 48000
-        segment_frames = 10 * 48000
-
-        if audio.shape[-1] < target_frames:
-            repeat_times = math.ceil(target_frames / audio.shape[-1])
-            audio = audio.repeat(1, repeat_times)
-
-        total_frames = audio.shape[-1]
-        segment_size = total_frames // 3
-
-        front_start = random.randint(0, max(0, segment_size - segment_frames))
-        front_audio = audio[:, front_start : front_start + segment_frames]
-
-        middle_start = segment_size + random.randint(0, max(0, segment_size - segment_frames))
-        middle_audio = audio[:, middle_start : middle_start + segment_frames]
-
-        back_start = 2 * segment_size + random.randint(
-            0, max(0, (total_frames - 2 * segment_size) - segment_frames)
-        )
-        back_audio = audio[:, back_start : back_start + segment_frames]
-
-        return torch.cat([front_audio, middle_audio, back_audio], dim=-1)
+        return audio, sr
     except (OSError, RuntimeError, ValueError):
-        logger.exception("Error processing reference audio with soundfile")
+        logger.exception("Error loading audio with soundfile: %s", audio_file)
         return None
+
+
+def _process_reference_audio_sf(self, audio_file: Optional[str]) -> Optional[torch.Tensor]:
+    """Replacement for handler.process_reference_audio using soundfile."""
+    result = _load_audio_sf(audio_file)
+    if result is None:
+        return None
+    audio, sr = result
+
+    audio = self._normalize_audio_to_stereo_48k(audio, sr)
+    if self.is_silence(audio):
+        return None
+
+    target_frames = 30 * 48000
+    segment_frames = 10 * 48000
+
+    if audio.shape[-1] < target_frames:
+        repeat_times = math.ceil(target_frames / audio.shape[-1])
+        audio = audio.repeat(1, repeat_times)
+
+    total_frames = audio.shape[-1]
+    segment_size = total_frames // 3
+
+    front_start = random.randint(0, max(0, segment_size - segment_frames))
+    front_audio = audio[:, front_start : front_start + segment_frames]
+
+    middle_start = segment_size + random.randint(0, max(0, segment_size - segment_frames))
+    middle_audio = audio[:, middle_start : middle_start + segment_frames]
+
+    back_start = 2 * segment_size + random.randint(
+        0, max(0, (total_frames - 2 * segment_size) - segment_frames)
+    )
+    back_audio = audio[:, back_start : back_start + segment_frames]
+
+    return torch.cat([front_audio, middle_audio, back_audio], dim=-1)
+
+
+def _process_src_audio_sf(self, audio_file: Optional[str]) -> Optional[torch.Tensor]:
+    """Replacement for handler.process_src_audio using soundfile."""
+    result = _load_audio_sf(audio_file)
+    if result is None:
+        return None
+    audio, sr = result
+    return self._normalize_audio_to_stereo_48k(audio, sr)
 
 
 class ACEStepGenerator:
@@ -88,10 +106,13 @@ class ACEStepGenerator:
 
         logger.info("Initializing ACE-Step v1.5 handler")
         self._handler = AceStepHandler()
-        # Patch process_reference_audio to use soundfile instead of
+        # Patch audio loading methods to use soundfile instead of
         # torchaudio (avoids torchcodec/libnppicc dependency).
         self._handler.process_reference_audio = types.MethodType(
             _process_reference_audio_sf, self._handler
+        )
+        self._handler.process_src_audio = types.MethodType(
+            _process_src_audio_sf, self._handler
         )
         status, ok = self._handler.initialize_service(
             project_root="",
@@ -104,7 +125,7 @@ class ACEStepGenerator:
 
     def _generate_sync(self, prompt: str) -> Path:
         logger.info(
-            "Generating (duration=%.1fs, steps=%d): %r",
+            "Generating repaint (duration=%.1fs, steps=%d): %r",
             self.config.acestep_audio_duration,
             self.config.acestep_infer_step,
             prompt,
@@ -116,6 +137,10 @@ class ACEStepGenerator:
             audio_duration=self.config.acestep_audio_duration,
             inference_steps=self.config.acestep_infer_step,
             reference_audio=self._ref_audio,
+            src_audio=self._ref_audio,
+            task_type="repaint",
+            repainting_start=0.0,
+            repainting_end=self.config.acestep_audio_duration,
         )
 
         if not result.get("success") or not result.get("audios"):
