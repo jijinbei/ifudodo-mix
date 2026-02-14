@@ -3,7 +3,7 @@ import logging
 import discord
 from discord import app_commands
 
-from .audio_utils import check_file_size, cleanup_temp_file
+from .audio_utils import check_file_size, cleanup_temp_file, convert_to_mp3
 from .base_generator import GenerationError
 from .config import Config
 from .generator_factory import create_generator
@@ -58,6 +58,12 @@ class IfudodoBot(discord.Client):
 
                 audio_path = await self.generator.generate(prompt)
 
+                # WAVが大きすぎる場合はMP3に変換
+                if not check_file_size(
+                    audio_path, self.config.max_file_size_mb
+                ):
+                    audio_path = convert_to_mp3(audio_path)
+
                 if not check_file_size(
                     audio_path, self.config.max_file_size_mb
                 ):
@@ -66,7 +72,7 @@ class IfudodoBot(discord.Client):
                     )
                     return
 
-                filename = f"ifudodo_mix.{self.config.output_format}"
+                filename = f"ifudodo_mix{audio_path.suffix}"
                 file = discord.File(str(audio_path), filename=filename)
                 await interaction.followup.send(
                     content=f"**威風堂々 mix: {description}**",

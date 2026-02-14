@@ -24,7 +24,7 @@ class ACEStepGenerator(BaseGenerator):
         from acestep.pipeline_ace_step import ACEStepPipeline
 
         logger.info("Initializing ACE-Step pipeline")
-        self._pipeline = ACEStepPipeline()
+        self._pipeline = ACEStepPipeline(cpu_offload=True)
         logger.info("ACE-Step pipeline initialized (model loads on first generation)")
 
     def _generate_sync(self, prompt: str) -> Path:

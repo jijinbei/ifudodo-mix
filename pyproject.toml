@@ -37,6 +37,7 @@ transformers = ">=4.30.0,<4.46"
 ace-step = { git = "https://github.com/ace-step/ACE-Step.git" }
 torch = ">=2.4.0"
 torchaudio = ">=2.4.0"
+torchcodec = ">=0.1.0"
 
 [tool.pixi.environments]
 musicgen = ["musicgen"]
