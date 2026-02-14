@@ -29,4 +29,7 @@ def build_prompt(user_description: str) -> str:
     cleaned = user_description.strip()
     if not cleaned:
         return IFUDODO_CONTEXT
-    return f"{IFUDODO_CONTEXT}, {cleaned}"
+    return (
+        f"{cleaned} remix of a {IFUDODO_CONTEXT}, "
+        f"reimagined with {cleaned} instrumentation, rhythm, and production"
+    )
