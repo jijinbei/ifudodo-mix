@@ -58,10 +58,8 @@ class IfudodoBot(discord.Client):
 
                 audio_path = await self.generator.generate(prompt)
 
-                # WAVが大きすぎる場合はMP3に変換
-                if not check_file_size(
-                    audio_path, self.config.max_file_size_mb
-                ):
+                # 常にMP3に変換（WAVはDiscordには大きすぎる）
+                if audio_path.suffix != ".mp3":
                     audio_path = convert_to_mp3(audio_path)
 
                 if not check_file_size(
@@ -72,7 +70,7 @@ class IfudodoBot(discord.Client):
                     )
                     return
 
-                filename = f"ifudodo_mix{audio_path.suffix}"
+                filename = "ifudodo_mix.mp3"
                 file = discord.File(str(audio_path), filename=filename)
                 await interaction.followup.send(
                     content=f"**威風堂々 mix: {description}**",

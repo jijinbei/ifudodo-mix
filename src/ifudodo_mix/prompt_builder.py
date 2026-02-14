@@ -1,14 +1,32 @@
 IFUDODO_CONTEXT = (
-    "energetic Japanese march-style song, "
-    "majestic and powerful, "
-    "dramatic brass and percussion, "
-    "triumphant and dignified atmosphere, "
-    "Ifuudoudou style"
+    "Japanese march in D major, 120 BPM, 4/4 time, "
+    "3 verses with repeating triumphant melody, "
+    "majestic and dignified"
 )
+
+IFUDODO_LYRICS = """\
+[Verse 1]
+濁悪の此の世行く 学会の
+行く手を阻むは 何奴なるぞ
+威風堂々と 信行たてて
+進む我らの 確信ここに
+
+[Verse 2]
+今日もまた明日もまた 折伏の
+行軍進めば 血は沸き上がる
+威風堂々と 邪法を砕き
+民を救わん 我らはここに
+
+[Verse 3]
+我ら住む日本の 楽土見ん
+北山南河は邪宗の都
+威風堂々と 正法かざし
+駒を進めば 草木もなびく\
+"""
 
 
 def build_prompt(user_description: str) -> str:
     cleaned = user_description.strip()
     if not cleaned:
         return IFUDODO_CONTEXT
-    return f"{IFUDODO_CONTEXT}, remixed as {cleaned}"
+    return f"{IFUDODO_CONTEXT}, {cleaned}"

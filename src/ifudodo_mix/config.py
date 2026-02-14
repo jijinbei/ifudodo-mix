@@ -71,6 +71,11 @@ class Config:
             os.environ.get("ACESTEP_INFER_STEP", "60")
         )
     )
+    acestep_ref_audio_strength: float = field(
+        default_factory=lambda: float(
+            os.environ.get("ACESTEP_REF_AUDIO_STRENGTH", "0.4")
+        )
+    )
 
     # Output
     output_format: str = field(
