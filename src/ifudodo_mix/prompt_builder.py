@@ -1,7 +1,7 @@
 IFUDODO_CONTEXT = (
-    "Japanese march in D major, 120 BPM, 4/4 time, "
-    "3 verses with repeating triumphant melody, "
-    "majestic and dignified"
+    "Japanese vocal song, 3 verses, "
+    "powerful anthem of courage and determination, "
+    "marching forward through a corrupt world with unwavering faith"
 )
 
 IFUDODO_LYRICS = """\
