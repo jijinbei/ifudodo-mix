@@ -4,8 +4,9 @@ import discord
 from discord import app_commands
 
 from .audio_utils import check_file_size, cleanup_temp_file
+from .base_generator import GenerationError
 from .config import Config
-from .generator import GenerationError, MusicGenerator
+from .generator_factory import create_generator
 from .prompt_builder import build_prompt
 
 logger = logging.getLogger(__name__)
@@ -17,10 +18,10 @@ class IfudodoBot(discord.Client):
         super().__init__(intents=intents)
         self.config = config
         self.tree = app_commands.CommandTree(self)
-        self.generator = MusicGenerator(config)
+        self.generator = create_generator(config)
 
     async def setup_hook(self) -> None:
-        self.generator.load_model()
+        await self.generator.setup()
         self._register_commands()
 
         if self.config.guild_id:

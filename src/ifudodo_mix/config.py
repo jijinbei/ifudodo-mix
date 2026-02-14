@@ -20,6 +20,11 @@ class Config:
         else None
     )
 
+    # Backend selection
+    generator_backend: str = field(
+        default_factory=lambda: os.environ.get("GENERATOR_BACKEND", "acestep")
+    )
+
     # MusicGen
     model_name: str = field(
         default_factory=lambda: os.environ.get(
@@ -47,6 +52,23 @@ class Config:
         default_factory=lambda: os.environ.get(
             "REFERENCE_MELODY_PATH",
             str(ROOT_DIR / "assets" / "ifudodo_source.mp4"),
+        )
+    )
+
+    # ACE-Step
+    acestep_model: str = field(
+        default_factory=lambda: os.environ.get(
+            "ACESTEP_MODEL", "acestep-v15-sft"
+        )
+    )
+    acestep_audio_duration: float = field(
+        default_factory=lambda: float(
+            os.environ.get("ACESTEP_AUDIO_DURATION", "15")
+        )
+    )
+    acestep_infer_step: int = field(
+        default_factory=lambda: int(
+            os.environ.get("ACESTEP_INFER_STEP", "60")
         )
     )
 

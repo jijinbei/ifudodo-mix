@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 
@@ -9,10 +10,10 @@ def check_file_size(path: Path, max_mb: float) -> bool:
 
 def cleanup_temp_file(path: Path) -> None:
     try:
-        if path.exists():
-            path.unlink()
         parent = path.parent
         if parent.exists() and parent.name.startswith("ifudodo_"):
-            parent.rmdir()
+            shutil.rmtree(parent)
+        elif path.exists():
+            path.unlink()
     except OSError:
         pass

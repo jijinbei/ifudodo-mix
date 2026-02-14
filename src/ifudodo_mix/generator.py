@@ -9,18 +9,18 @@ import torchaudio
 from audiocraft.data.audio import audio_write
 from audiocraft.models import MusicGen
 
+from .base_generator import BaseGenerator, GenerationError
 from .config import Config
+
+# Re-export for backwards compatibility
+GenerationError = GenerationError
 
 logger = logging.getLogger(__name__)
 
 MAX_QUEUE_DEPTH = 3
 
 
-class GenerationError(Exception):
-    pass
-
-
-class MusicGenerator:
+class MusicGenerator(BaseGenerator):
     def __init__(self, config: Config):
         self.config = config
         self._model: MusicGen | None = None
@@ -30,7 +30,7 @@ class MusicGenerator:
         self._lock = asyncio.Lock()
         self._queue_depth = 0
 
-    def load_model(self) -> None:
+    async def setup(self) -> None:
         logger.info("Loading MusicGen model: %s", self.config.model_name)
         self._model = MusicGen.get_pretrained(
             self.config.model_name,

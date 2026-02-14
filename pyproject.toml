@@ -1,7 +1,7 @@
 [project]
 name = "ifudodo-mix"
 version = "0.1.0"
-description = "Discord bot that generates Ifuudoudou music mixes using MusicGen"
+description = "Discord bot that generates Ifuudoudou music mixes"
 requires-python = ">=3.10,<3.12"
 
 [tool.pixi.workspace]
@@ -12,19 +12,33 @@ platforms = ["linux-64"]
 python = "3.10.*"
 ffmpeg = ">=6,<7"
 pkg-config = "*"
-numpy = "<2.0.0"
 
+# Shared dependencies (both backends)
 [tool.pixi.pypi-dependencies]
 discord-py = ">=2.3"
-audiocraft = { git = "https://github.com/facebookresearch/audiocraft.git" }
 torch = ">=2.1.0,<2.4"
 torchaudio = ">=2.1.0,<2.4"
-transformers = ">=4.30.0,<4.46"
 python-dotenv = ">=1.0.0"
 ifudodo-mix = { path = ".", editable = true }
 
 [tool.pixi.pypi-options]
 no-binary = ["av"]
+
+# MusicGen backend
+[tool.pixi.feature.musicgen.dependencies]
+numpy = "<2.0.0"
+
+[tool.pixi.feature.musicgen.pypi-dependencies]
+audiocraft = { git = "https://github.com/facebookresearch/audiocraft.git" }
+transformers = ">=4.30.0,<4.46"
+
+# ACE-Step backend (v1.0 from GitHub; PyPI sdist is broken)
+[tool.pixi.feature.acestep.pypi-dependencies]
+ace-step = { git = "https://github.com/ace-step/ACE-Step.git" }
+
+[tool.pixi.environments]
+musicgen = ["musicgen"]
+acestep = ["acestep"]
 
 [tool.pixi.tasks]
 start = "python -m ifudodo_mix"
