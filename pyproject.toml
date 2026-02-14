@@ -16,8 +16,6 @@ pkg-config = "*"
 # Shared dependencies (both backends)
 [tool.pixi.pypi-dependencies]
 discord-py = ">=2.3"
-torch = ">=2.1.0,<2.4"
-torchaudio = ">=2.1.0,<2.4"
 python-dotenv = ">=1.0.0"
 ifudodo-mix = { path = ".", editable = true }
 
@@ -30,11 +28,15 @@ numpy = "<2.0.0"
 
 [tool.pixi.feature.musicgen.pypi-dependencies]
 audiocraft = { git = "https://github.com/facebookresearch/audiocraft.git" }
+torch = ">=2.1.0,<2.4"
+torchaudio = ">=2.1.0,<2.4"
 transformers = ">=4.30.0,<4.46"
 
 # ACE-Step backend (v1.0 from GitHub; PyPI sdist is broken)
 [tool.pixi.feature.acestep.pypi-dependencies]
 ace-step = { git = "https://github.com/ace-step/ACE-Step.git" }
+torch = ">=2.4.0"
+torchaudio = ">=2.4.0"
 
 [tool.pixi.environments]
 musicgen = ["musicgen"]

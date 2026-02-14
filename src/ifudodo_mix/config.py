@@ -63,7 +63,7 @@ class Config:
     )
     acestep_audio_duration: float = field(
         default_factory=lambda: float(
-            os.environ.get("ACESTEP_AUDIO_DURATION", "15")
+            os.environ.get("ACESTEP_AUDIO_DURATION", "180")
         )
     )
     acestep_infer_step: int = field(
