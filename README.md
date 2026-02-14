@@ -7,6 +7,7 @@
 - [pixi](https://pixi.sh/) (パッケージマネージャ)
 - CUDA 対応 GPU (VRAM 10GB 以上推奨)
 - Discord Bot トークン
+- [Ollama](https://ollama.com/) (スタイル調査用、省略可)
 
 ## セットアップ
 
@@ -38,6 +39,8 @@ cp .env.example .env
 ```
 DISCORD_TOKEN=your_token_here
 GUILD_ID=123456789              # 省略可: 開発時はサーバーIDを指定するとコマンド反映が即座
+OLLAMA_HOST=http://localhost:11434  # 省略可: Ollamaサーバーのアドレス
+OLLAMA_MODEL=gemma3                 # 省略可: スタイル調査に使うモデル
 ```
 
 ### 4. 起動
@@ -73,6 +76,8 @@ Discord で `/ifudodo` コマンドを使います:
 | `REFERENCE_MELODY_PATH` | `assets/ifudodo_source.wav` | リファレンス楽曲のパス |
 | `ACESTEP_AUDIO_DURATION` | `180` | 生成する音声の長さ (秒) |
 | `ACESTEP_INFER_STEP` | `60` | 推論ステップ数（多いほど高品質・低速） |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama サーバーのアドレス |
+| `OLLAMA_MODEL` | `gemma3` | スタイル調査に使うモデル |
 | `MAX_FILE_SIZE_MB` | `24` | Discord アップロード上限 (MB) |
 
 ## 仕組み
